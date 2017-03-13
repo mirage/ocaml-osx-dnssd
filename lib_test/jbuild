@@ -1,0 +1,5 @@
+(executables
+ ((names (test))
+  (libraries   (dnssd logs logs.fmt alcotest))
+))
+

@@ -1,4 +1,0 @@
-true : bin_annot, safe_string
-true: package(lwt astring logs)
-
-<lib_test/*>: package(alcotest), package(lwt.unix), package(logs.fmt)
