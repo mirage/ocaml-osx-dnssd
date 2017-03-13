@@ -15,8 +15,6 @@
  *
  *)
 
-(* Convert from DNS `q_type` to the `type` enum values *)
-
 type kDNSServiceType =
   | A
   | NS
