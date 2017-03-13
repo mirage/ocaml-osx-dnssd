@@ -51,6 +51,13 @@ int main(int argc, char **argv) {
 
     DNSServiceProcessResult(serviceRef);
     DNSServiceRefDeallocate(serviceRef);
+
+    fprintf(stderr, "dig -t NS google.com\n");
+    DNSServiceQueryRecord(&serviceRef, 0, 0, "google.com", kDNSServiceType_NS,
+                          kDNSServiceClass_IN, queryCallback, NULL);
+
+    DNSServiceProcessResult(serviceRef);
+    DNSServiceRefDeallocate(serviceRef);
     return 0;
 }
 
