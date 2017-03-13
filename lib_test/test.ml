@@ -15,7 +15,9 @@
  *
  *)
 
-let test_mx () = ()
+let test_mx () =
+  let results = Dnssd.(query "google.com" MX) in
+  if results = [] then failwith "No MX records found for google.com"
 
 let test_types = [
   "MX", `Quick, test_mx;

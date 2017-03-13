@@ -91,3 +91,7 @@ type kDNSServiceType =
   | MAILA      (** Transfer mail agent records. *)
   | ANY        (** Wildcard match. *)
 (** DNS record type *)
+
+val query: string -> kDNSServiceType -> Bytes.t list
+(** [query name ty] returns a list of resource records of type [ty] bound to
+    [name] *)

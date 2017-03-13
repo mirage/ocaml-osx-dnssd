@@ -87,16 +87,41 @@ external int_of_DNSServiceType: kDNSServiceType -> int = "stub_int_of_DNSService
 
 type query (* wraps a DNSServiceRef *)
 
-type callback
+let next_token =
+  let i = ref 0 in
+  fun () ->
+    let this = !i in
+    incr i;
+    this
 
-external query_record: string -> int -> callback -> query = "stub_query_record"
+type in_progress_call = {
+  mutable results: Bytes.t list;
+}
+
+let in_progress_calls = Hashtbl.create 7
+
+type token = int
+
+external query_record: string -> int -> token -> query = "stub_query_record"
 
 external query_process: query -> unit = "stub_query_process"
 
 external query_deallocate: query -> unit = "stub_query_deallocate"
 
-let common_callback id =
-  Printf.fprintf stderr "common_callback id = %d\n%!" id
+let common_callback token =
+  Printf.fprintf stderr "common_callback token = %d\n%!" token;
+  Hashtbl.replace in_progress_calls token { results = [] }
+
+let query name ty =
+  let ty' = int_of_DNSServiceType ty in
+  if ty' < 0 then failwith "Unrecognised query type";
+  let token = next_token () in
+  let q = query_record name ty' token in
+  query_process q;
+  let results = (Hashtbl.find in_progress_calls token).results in
+  Hashtbl.remove in_progress_calls token;
+  query_deallocate q;
+  results
 
 let () =
   Callback.register "ocaml-osx-dnssd" common_callback
