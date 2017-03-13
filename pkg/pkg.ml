@@ -5,5 +5,7 @@ open Topkg
 
 let () =
   Pkg.describe "osx-dnssd" @@ fun c ->
-  Ok [ Pkg.mllib "lib/osx-dnssd.mllib";
+  Ok [
+    Pkg.mllib "lib/osx-dnssd.mllib";
+    Pkg.clib "lib/libosx-dnssd_stubs.clib";
   ]

@@ -15,3 +15,72 @@
  *
  *)
 
+(* Convert from DNS `q_type` to the `type` enum values *)
+
+type kDNSServiceType =
+  | A
+  | NS
+  | MD
+  | MF
+  | CNAME
+  | SOA
+  | MB
+  | MG
+  | MR
+  | NULL
+  | WKS
+  | PTR
+  | HINFO
+  | MINFO
+  | MX
+  | TXT
+  | RP
+  | AFSDB
+  | X25
+  | ISDN
+  | RT
+  | NSAP
+  | NSAP_PTR
+  | SIG
+  | KEY
+  | PX
+  | GPOS
+  | AAAA
+  | LOC
+  | NXT
+  | EID
+  | NIMLOC
+  | SRV
+  | ATMA
+  | NAPTR
+  | KX
+  | CERT
+  | A6
+  | DNAME
+  | SINK
+  | OPT
+  | APL
+  | DS
+  | SSHFP
+  | IPSECKEY
+  | RRSIG
+  | NSEC
+  | DNSKEY
+  | DHCID
+  | NSEC3
+  | NSEC3PARAM
+  | HIP
+  | SPF
+  | UINFO
+  | UID
+  | GID
+  | UNSPEC
+  | TKEY
+  | TSIG
+  | IXFR
+  | AXFR
+  | MAILB
+  | MAILA
+  | ANY
+
+external int_of_DNSServiceType: kDNSServiceType -> int = "stub_int_of_DNSServiceType"
