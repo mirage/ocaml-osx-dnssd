@@ -82,3 +82,15 @@ type kDNSServiceType =
   | ANY
 
 external int_of_DNSServiceType: kDNSServiceType -> int = "stub_int_of_DNSServiceType"
+
+(* Low-level, unsafe APIs *)
+
+type query (* wraps a DNSServiceRef *)
+
+type callback
+
+external query_record: string -> int -> callback -> query = "stub_query_record"
+
+external query_process: query -> unit = "stub_query_process"
+
+external query_deallocate: query -> unit = "stub_query_deallocate"

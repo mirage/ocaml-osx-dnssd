@@ -1,7 +1,9 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
+#include <caml/custom.h>
 
 #include <dns_sd.h>
+#include <string.h>
 
 int table_DNSServiceType[] = {
     kDNSServiceType_A,
@@ -83,4 +85,52 @@ CAMLprim value stub_int_of_DNSServiceType(value ty) {
     ret = Val_int(table_DNSServiceType[c_ty]);
   }
   CAMLreturn(ret);
+}
+
+typedef struct _query {
+  DNSServiceRef serviceRef;
+  bool finalized;
+  /* callback */
+} query;
+
+#define Query_val(x) ((query*)Data_custom_val(x))
+
+static void finalize_query(value v) {
+  query *q = Query_val(v);
+  if (!q->finalized) DNSServiceRefDeallocate(q->serviceRef);
+  q->finalized = true;
+}
+
+static struct custom_operations query_custom_ops = {
+    .identifier   = "DNSServiceRef query handling",
+    .finalize     = finalize_query,
+    .compare      = custom_compare_default,
+    .hash         = custom_hash_default,
+    .serialize    = custom_serialize_default,
+    .deserialize  = custom_deserialize_default
+};
+
+CAMLprim value stub_query_record(value name, value ty, value callback) {
+  CAMLparam3(name, ty, callback);
+  CAMLlocal1(v);
+  v = caml_alloc_custom(&query_custom_ops, sizeof(query), 0, 1);
+  query *q = Query_val(v);
+  q->finalized = false;
+  /* TODO: set the serviceRef */
+  CAMLreturn(v);
+}
+
+CAMLprim value stub_query_process(value v) {
+  CAMLparam1(v);
+  query *q = Query_val(v);
+  DNSServiceProcessResult(q->serviceRef);
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value stub_query_deallocate(value v) {
+  CAMLparam1(v);
+  query *q = Query_val(v);
+  if (!q->finalized) DNSServiceRefDeallocate(q->serviceRef);
+  q->finalized = true;
+  CAMLreturn(Val_unit);
 }
