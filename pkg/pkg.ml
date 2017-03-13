@@ -8,4 +8,5 @@ let () =
   Ok [
     Pkg.mllib "lib/osx-dnssd.mllib";
     Pkg.clib "lib/libosx-dnssd_stubs.clib";
+    Pkg.test  "lib_test/test" ~args:(Cmd.v "-q");
   ]
