@@ -1,6 +1,7 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/custom.h>
+#include <caml/callback.h>
 
 #include <dns_sd.h>
 #include <string.h>
@@ -89,15 +90,19 @@ CAMLprim value stub_int_of_DNSServiceType(value ty) {
 
 typedef struct _query {
   DNSServiceRef serviceRef;
+  void *context;
   bool finalized;
-  /* callback */
 } query;
 
 #define Query_val(x) ((query*)Data_custom_val(x))
 
 static void finalize_query(value v) {
   query *q = Query_val(v);
-  if (!q->finalized) DNSServiceRefDeallocate(q->serviceRef);
+  if (!q->finalized) {
+    DNSServiceRefDeallocate(q->serviceRef);
+    free(q->context);
+    q->context = NULL;
+  }
   q->finalized = true;
 }
 
@@ -110,13 +115,31 @@ static struct custom_operations query_custom_ops = {
     .deserialize  = custom_deserialize_default
 };
 
-CAMLprim value stub_query_record(value name, value ty, value callback) {
-  CAMLparam3(name, ty, callback);
+static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
+                       DNSServiceErrorType errorCode, const char *fullname, uint16_t rrtype,
+                       uint16_t rrclass, uint16_t rdlen, const void *rdata, uint32_t ttl, void *context) {
+  static value *ocaml_f = NULL;
+  if (ocaml_f == NULL) {
+      ocaml_f = caml_named_value("ocaml-osx-dnssd");
+  }
+  if (ocaml_f == NULL) abort();
+  int c_id = *(int*)context;
+
+  caml_callback(*ocaml_f, Val_int(c_id));
+}
+
+CAMLprim value stub_query_record(value name, value ty, value id) {
+  CAMLparam3(name, ty, id);
   CAMLlocal1(v);
   v = caml_alloc_custom(&query_custom_ops, sizeof(query), 0, 1);
   query *q = Query_val(v);
+  char *c_name = String_val(name);
+  int c_ty = Int_val(ty);
+  q->context = malloc(sizeof(int));
+  *(int*)(q->context) = Int_val(ty);
+  DNSServiceQueryRecord(&q->serviceRef, 0, 0, c_name, c_ty,
+                        kDNSServiceClass_IN, common_callback, q->context);
   q->finalized = false;
-  /* TODO: set the serviceRef */
   CAMLreturn(v);
 }
 
@@ -130,7 +153,11 @@ CAMLprim value stub_query_process(value v) {
 CAMLprim value stub_query_deallocate(value v) {
   CAMLparam1(v);
   query *q = Query_val(v);
-  if (!q->finalized) DNSServiceRefDeallocate(q->serviceRef);
+  if (!q->finalized) {
+    DNSServiceRefDeallocate(q->serviceRef);
+    free(q->context);
+    q->context = NULL;
+  }
   q->finalized = true;
   CAMLreturn(Val_unit);
 }

@@ -94,3 +94,9 @@ external query_record: string -> int -> callback -> query = "stub_query_record"
 external query_process: query -> unit = "stub_query_process"
 
 external query_deallocate: query -> unit = "stub_query_deallocate"
+
+let common_callback id =
+  Printf.fprintf stderr "common_callback id = %d\n%!" id
+
+let () =
+  Callback.register "ocaml-osx-dnssd" common_callback
