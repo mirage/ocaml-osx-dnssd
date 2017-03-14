@@ -95,7 +95,7 @@ type kDNSServiceType =
 type rr = {
   rrtype: Dns.Packet.rr_type option;
   rrclass: Dns.Packet.rr_class option;
-  rrdata: Bytes.t;
+  rrdata: Dns.Packet.rdata option;
   ttl: int;
 }
 (** A DNS resource record *)

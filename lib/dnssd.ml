@@ -171,15 +171,16 @@ type cb_result = {
 type rr = {
   rrtype: Dns.Packet.rr_type option;
   rrclass: Dns.Packet.rr_class option;
-  rrdata: Bytes.t;
+  rrdata: Dns.Packet.rdata option;
   ttl: int;
 }
 
 let string_of_rr rr =
-  Printf.sprintf "{ rrtype = %s; rrclass = %s; rrdata(%d) = %s; ttl = %d }"
+  Printf.sprintf "{ rrtype = %s; rrclass = %s; rrdata = %s; ttl = %d }"
     (match rr.rrtype with None -> "None" | Some x -> Dns.Packet.rr_type_to_string x)
     (match rr.rrclass with None -> "Some" | Some x -> Dns.Packet.rr_class_to_string x)
-    (Bytes.length rr.rrdata) rr.rrdata rr.ttl
+    (match rr.rrdata with None -> "None" | Some x -> Dns.Packet.rdata_to_string x)
+    rr.ttl
 
 (* Accumulate the results here *)
 let in_progress_calls = Hashtbl.create 7
@@ -196,10 +197,21 @@ let common_callback token result = match result with
   | Error err ->
     Hashtbl.replace in_progress_calls token (Error err)
   | Ok this ->
+    let rrdata = match Dns.Packet.int_to_rr_type this.cb_rrtype with
+      | Some rrtype ->
+        let buf = Cstruct.create (Bytes.length this.cb_rrdata) in
+        Cstruct.blit_from_bytes this.cb_rrdata 0 buf 0 (Bytes.length this.cb_rrdata);
+        begin
+          try
+            Some (Dns.Packet.parse_rdata (Hashtbl.create 1) 0 rrtype this.cb_rrclass (Int32.of_int this.cb_ttl) buf)
+          with Dns.Packet.Not_implemented ->
+            None
+        end
+      | None -> None in
     let rr = {
       rrtype = Dns.Packet.int_to_rr_type this.cb_rrtype;
       rrclass = (match this.cb_rrclass with 1 -> Some Dns.Packet.RR_IN | _ -> None);
-      rrdata = this.cb_rrdata;
+      rrdata;
       ttl = this.cb_ttl;
     } in
     if Hashtbl.mem in_progress_calls token then begin
