@@ -94,10 +94,19 @@ let next_token =
     incr i;
     this
 
-type in_progress_call = {
-  mutable results: Bytes.t list;
+(* The callback fires once per result *)
+type rr = {
+  rrclass: int;
+  rrtype: int;
+  rrdata: Bytes.t;
+  ttl: int;
 }
 
+let string_of_rr rr =
+  Printf.sprintf "{ rrclass = %d; rrtype = %d; rrdata(%d) = %s; ttl = %d }"
+    rr.rrclass rr.rrtype (Bytes.length rr.rrdata) rr.rrdata rr.ttl
+
+(* Accumulate the results here *)
 let in_progress_calls = Hashtbl.create 7
 
 type token = int
@@ -109,8 +118,15 @@ external query_process: query -> unit = "stub_query_process"
 external query_deallocate: query -> unit = "stub_query_deallocate"
 
 let common_callback token =
-  Printf.fprintf stderr "common_callback token = %d\n%!" token;
-  Hashtbl.replace in_progress_calls token { results = [] }
+  function
+  | None ->
+    Printf.fprintf stderr "Some error happened\n%!"
+  | Some this ->
+    let existing =
+      if Hashtbl.mem in_progress_calls token
+      then Hashtbl.find in_progress_calls token
+      else [] in
+    Hashtbl.replace in_progress_calls token (this :: existing)
 
 let query name ty =
   let ty' = int_of_DNSServiceType ty in
@@ -118,10 +134,10 @@ let query name ty =
   let token = next_token () in
   let q = query_record name ty' token in
   query_process q;
-  let results = (Hashtbl.find in_progress_calls token).results in
+  let all = Hashtbl.find in_progress_calls token in
   Hashtbl.remove in_progress_calls token;
   query_deallocate q;
-  results
+  all
 
 let () =
   Callback.register "ocaml-osx-dnssd" common_callback

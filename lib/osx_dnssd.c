@@ -2,6 +2,7 @@
 #include <caml/memory.h>
 #include <caml/custom.h>
 #include <caml/callback.h>
+#include <caml/alloc.h>
 
 #include <dns_sd.h>
 #include <string.h>
@@ -118,14 +119,32 @@ static struct custom_operations query_custom_ops = {
 static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
                        DNSServiceErrorType errorCode, const char *fullname, uint16_t rrtype,
                        uint16_t rrclass, uint16_t rdlen, const void *rdata, uint32_t ttl, void *context) {
+  CAMLparam0();
+  CAMLlocal3(result, record, raw);
+
   static value *ocaml_f = NULL;
   if (ocaml_f == NULL) {
       ocaml_f = caml_named_value("ocaml-osx-dnssd");
   }
   if (ocaml_f == NULL) abort();
-  int c_id = *(int*)context;
+  int c_token = *(int*)context;
 
-  caml_callback(*ocaml_f, Val_int(c_id));
+  if (errorCode == kDNSServiceErr_NoError) {
+    record = caml_alloc(4, 0);
+    Store_field(record, 0, Val_int(rrtype));
+    Store_field(record, 1, Val_int(rrclass));
+    raw = caml_alloc_string(rdlen);
+    memcpy(String_val(raw), rdata, rdlen);
+    Store_field(record, 2, raw);
+    Store_field(record, 3, ttl);
+    result = caml_alloc(1, 0); /* Some */
+    Store_field(result, 0, record);
+    caml_callback2(*ocaml_f, Val_int(c_token), result);
+  } else {
+    result = Val_int(0); /* None */
+    caml_callback2(*ocaml_f, Val_int(c_token), result);
+  }
+  CAMLreturn0;
 }
 
 CAMLprim value stub_query_record(value name, value ty, value token) {

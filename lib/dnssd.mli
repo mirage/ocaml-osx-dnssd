@@ -92,6 +92,16 @@ type kDNSServiceType =
   | ANY        (** Wildcard match. *)
 (** DNS record type *)
 
-val query: string -> kDNSServiceType -> Bytes.t list
+type rr = {
+  rrclass: int;
+  rrtype: int;
+  rrdata: Bytes.t;
+  ttl: int;
+}
+(** A DNS resource record *)
+
+val string_of_rr: rr -> string
+
+val query: string -> kDNSServiceType -> rr list
 (** [query name ty] returns a list of resource records of type [ty] bound to
     [name] *)

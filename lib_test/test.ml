@@ -15,9 +15,20 @@
  *
  *)
 
+let src =
+  let src = Logs.Src.create "dnssd" ~doc:"DNS-SD interface" in
+  Logs.Src.set_level src (Some Logs.Info);
+  src
+
+module Log = (val Logs.src_log src : Logs.LOG)
+
 let test_mx () =
   let results = Dnssd.(query "google.com" MX) in
-  if results = [] then failwith "No MX records found for google.com"
+  if results = [] then failwith "No MX records found for google.com";
+  List.iter
+    (fun rr ->
+      Log.info (fun f -> f "google.com MX: %s" (Dnssd.string_of_rr rr))
+    ) results
 
 let test_types = [
   "MX", `Quick, test_mx;
