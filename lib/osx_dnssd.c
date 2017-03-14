@@ -4,8 +4,16 @@
 #include <caml/callback.h>
 #include <caml/alloc.h>
 
-#include <dns_sd.h>
 #include <string.h>
+
+#if !defined(__APPLE__)
+#define bool int
+#define true 1
+#define false 0
+#endif
+
+#if defined(__APPLE__)
+#include <dns_sd.h>
 
 int table_DNSServiceType[] = {
     kDNSServiceType_A,
@@ -76,19 +84,25 @@ int table_DNSServiceType[] = {
     kDNSServiceType_MAILA,
     kDNSServiceType_ANY
 };
+#endif
 
 CAMLprim value stub_int_of_DNSServiceType(value ty) {
   CAMLparam1(ty);
   CAMLlocal1(ret);
+#if defined(__APPLE__)
   int c_ty = Int_val(ty);
   if (c_ty >= sizeof(table_DNSServiceType) / sizeof(table_DNSServiceType[0])) {
     ret = Val_int(-1);
   } else {
     ret = Val_int(table_DNSServiceType[c_ty]);
   }
+#else
+  caml_failwith("Only implemented on macOS");
+#endif
   CAMLreturn(ret);
 }
 
+#if defined(__APPLE__)
 int table_kDNSServiceErr[] = {
   /* kDNSServiceErr_NoError, -- not in the OCaml type */
   kDNSServiceErr_Unknown,
@@ -123,8 +137,10 @@ int table_kDNSServiceErr[] = {
   kDNSServiceErr_PollingMode,
   kDNSServiceErr_Timeout,
 };
+#endif
 
 CAMLprim value error_of_kDNSServiceErr(int c_ty) {
+#if defined(__APPLE__)
   value ret = Val_int(1); /* Unknown */
   for (int i = 0; i < sizeof(table_kDNSServiceErr) / sizeof(table_kDNSServiceErr[0]); i++) {
     if (table_kDNSServiceErr[i] == c_ty) {
@@ -132,10 +148,15 @@ CAMLprim value error_of_kDNSServiceErr(int c_ty) {
     }
   }
   return ret;
+#else
+  caml_failwith("Only implemented on macOS");
+#endif
 }
 
 typedef struct _query {
+#if defined(__APPLE__)
   DNSServiceRef serviceRef;
+#endif
   void *context;
   bool finalized;
 } query;
@@ -145,7 +166,9 @@ typedef struct _query {
 static void finalize_query(value v) {
   query *q = Query_val(v);
   if (!q->finalized) {
+#if defined(__APPLE__)
     DNSServiceRefDeallocate(q->serviceRef);
+#endif
     free(q->context);
     q->context = NULL;
   }
@@ -161,6 +184,7 @@ static struct custom_operations query_custom_ops = {
     .deserialize  = custom_deserialize_default
 };
 
+#if defined(__APPLE__)
 static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex,
                        DNSServiceErrorType errorCode, const char *fullname, uint16_t rrtype,
                        uint16_t rrclass, uint16_t rdlen, const void *rdata, uint32_t ttl, void *context) {
@@ -194,6 +218,7 @@ static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t
   }
   CAMLreturn0;
 }
+#endif
 
 CAMLprim value stub_query_record(value name, value ty, value token) {
   CAMLparam3(name, ty, token);
@@ -204,8 +229,12 @@ CAMLprim value stub_query_record(value name, value ty, value token) {
   int c_ty = Int_val(ty);
   q->context = malloc(sizeof(int));
   *(int*)(q->context) = Int_val(token);
+#if defined(__APPLE__)
   DNSServiceQueryRecord(&q->serviceRef, kDNSServiceFlagsTimeout | kDNSServiceFlagsReturnIntermediates, 0, c_name, c_ty,
                         kDNSServiceClass_IN, common_callback, q->context);
+#else
+  caml_failwith("Only implemented on macOS");
+#endif
   q->finalized = false;
   CAMLreturn(v);
 }
@@ -213,7 +242,12 @@ CAMLprim value stub_query_record(value name, value ty, value token) {
 CAMLprim value stub_query_fd(value v) {
   CAMLparam1(v);
   query *q = Query_val(v);
-  int fd = DNSServiceRefSockFD(q->serviceRef);
+  int fd = -1;
+#if defined(__APPLE__)
+  fd = DNSServiceRefSockFD(q->serviceRef);
+#else
+  caml_failwith("Only implemented on macOS");
+#endif
   if (fd == -1) caml_failwith("DNSServiceRefSocketFD");
   CAMLreturn(Val_int(fd));
 }
@@ -221,7 +255,11 @@ CAMLprim value stub_query_fd(value v) {
 CAMLprim value stub_query_process(value v) {
   CAMLparam1(v);
   query *q = Query_val(v);
+#if defined(__APPLE__)
   DNSServiceProcessResult(q->serviceRef);
+#else
+  caml_failwith("Only implemented on macOS");
+#endif
   CAMLreturn(Val_unit);
 }
 
@@ -229,7 +267,11 @@ CAMLprim value stub_query_deallocate(value v) {
   CAMLparam1(v);
   query *q = Query_val(v);
   if (!q->finalized) {
+#if defined(__APPLE__)
     DNSServiceRefDeallocate(q->serviceRef);
+#else
+    caml_failwith("Only implemented on macOS");
+#endif
     free(q->context);
     q->context = NULL;
   }
