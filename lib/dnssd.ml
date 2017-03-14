@@ -83,6 +83,72 @@ type kDNSServiceType =
 
 external int_of_DNSServiceType: kDNSServiceType -> int = "stub_int_of_DNSServiceType"
 
+type error =
+  | Unknown
+  | NoSuchName
+  | NoMemory
+  | BadParam
+  | BadReference
+  | BadState
+  | BadFlags
+  | Unsupported
+  | NotInitialized
+  | AlreadyRegistered
+  | NameConflict
+  | Invalid
+  | Firewall
+  | Incompatible
+  | BadInterfaceIndex
+  | Refused
+  | NoSuchRecord
+  | NoAuth
+  | NoSuchKey
+  | NATTraversal
+  | DoubleNAT
+  | BadTime
+  | BadSig
+  | BadKey
+  | Transient
+  | ServiceNotRunning
+  | NATPortMappingUnsupported
+  | NATPortMappingDisabled
+  | NoRouter
+  | PollingMode
+  | Timeout
+
+let string_of_error = function
+  | Unknown -> "Unknown"
+  | NoSuchName -> "NoSuchName"
+  | NoMemory -> "NoMemory"
+  | BadParam -> "BadParam"
+  | BadReference -> "BadReference"
+  | BadState -> "BadState"
+  | BadFlags -> "BadFlags"
+  | Unsupported -> "Unsupported"
+  | NotInitialized -> "NotInitialized"
+  | AlreadyRegistered -> "AlreadyRegistered"
+  | NameConflict -> "NameConflict"
+  | Invalid -> "Invalid"
+  | Firewall -> "Firewall"
+  | Incompatible -> "Incompatible"
+  | BadInterfaceIndex -> "BadInterfaceIndex"
+  | Refused -> "Refused"
+  | NoSuchRecord -> "NoSuchRecord"
+  | NoAuth -> "NoAuth"
+  | NoSuchKey -> "NoSuchKey"
+  | NATTraversal -> "NATTraversal"
+  | DoubleNAT -> "DoubleNAT"
+  | BadTime -> "BadTime"
+  | BadSig -> "BadSig"
+  | BadKey -> "BadKey"
+  | Transient -> "Transient"
+  | ServiceNotRunning -> "ServiceNotRunning"
+  | NATPortMappingUnsupported -> "NATPortMappingUnsupported"
+  | NATPortMappingDisabled -> "NATPortMappingDisabled"
+  | NoRouter -> "NoRouter"
+  | PollingMode -> "PollingMode"
+  | Timeout -> "Timeout"
+
 (* Low-level, unsafe APIs *)
 
 type query (* wraps a DNSServiceRef *)
@@ -117,16 +183,15 @@ external query_process: query -> unit = "stub_query_process"
 
 external query_deallocate: query -> unit = "stub_query_deallocate"
 
-let common_callback token =
-  function
-  | None ->
-    Printf.fprintf stderr "Some error happened\n%!"
-  | Some this ->
-    let existing =
-      if Hashtbl.mem in_progress_calls token
-      then Hashtbl.find in_progress_calls token
-      else [] in
-    Hashtbl.replace in_progress_calls token (this :: existing)
+let common_callback token result = match result with
+  | Error err ->
+    Hashtbl.replace in_progress_calls token (Error err)
+  | Ok this ->
+    if Hashtbl.mem in_progress_calls token then begin
+      match Hashtbl.find in_progress_calls token with
+      | Error _ -> () (* keep the error *)
+      | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (this :: existing))
+    end else Hashtbl.replace in_progress_calls token (Ok [ this ])
 
 let query name ty =
   let ty' = int_of_DNSServiceType ty in
@@ -134,10 +199,10 @@ let query name ty =
   let token = next_token () in
   let q = query_record name ty' token in
   query_process q;
-  let all = Hashtbl.find in_progress_calls token in
+  let result = Hashtbl.find in_progress_calls token in
   Hashtbl.remove in_progress_calls token;
   query_deallocate q;
-  all
+  result
 
 let () =
   Callback.register "ocaml-osx-dnssd" common_callback

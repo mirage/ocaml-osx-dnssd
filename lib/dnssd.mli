@@ -102,6 +102,42 @@ type rr = {
 
 val string_of_rr: rr -> string
 
-val query: string -> kDNSServiceType -> rr list
+type error =
+  | Unknown
+  | NoSuchName
+  | NoMemory
+  | BadParam
+  | BadReference
+  | BadState
+  | BadFlags
+  | Unsupported
+  | NotInitialized
+  | AlreadyRegistered
+  | NameConflict
+  | Invalid
+  | Firewall
+  | Incompatible
+  | BadInterfaceIndex
+  | Refused
+  | NoSuchRecord
+  | NoAuth
+  | NoSuchKey
+  | NATTraversal
+  | DoubleNAT
+  | BadTime
+  | BadSig
+  | BadKey
+  | Transient
+  | ServiceNotRunning
+  | NATPortMappingUnsupported
+  | NATPortMappingDisabled
+  | NoRouter
+  | PollingMode
+  | Timeout
+(** Possible errors from [query] *)
+
+val string_of_error: error -> string
+
+val query: string -> kDNSServiceType -> (rr list, error) result
 (** [query name ty] returns a list of resource records of type [ty] bound to
     [name] *)

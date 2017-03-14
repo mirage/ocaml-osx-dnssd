@@ -23,15 +23,42 @@ let src =
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let test_mx () =
-  let results = Dnssd.(query "google.com" MX) in
-  if results = [] then failwith "No MX records found for google.com";
-  List.iter
-    (fun rr ->
-      Log.info (fun f -> f "google.com MX: %s" (Dnssd.string_of_rr rr))
-    ) results
+  match Dnssd.(query "google.com" MX) with
+  | Error err -> failwith (Printf.sprintf "Error looking up MX records for google.com: %s" (Dnssd.string_of_error err))
+  | Ok [] -> failwith "No MX records found for google.com";
+  | Ok results ->
+    List.iter
+      (fun rr ->
+        Log.info (fun f -> f "google.com MX: %s" (Dnssd.string_of_rr rr))
+      ) results
+
+let test_nomx () =
+  match Dnssd.(query "dave.recoil.org" MX) with
+  | Error err -> failwith (Printf.sprintf "Error looking up records for dave.recoil.org: %s" (Dnssd.string_of_error err))
+  | Ok results ->
+    List.iter
+      (fun rr ->
+        Log.info (fun f -> f "dave.recoil.org MX: %s" (Dnssd.string_of_rr rr))
+      ) results
+    (* FIXME: check the type of the records *)
 
 let test_types = [
   "MX", `Quick, test_mx;
+  "No MX", `Quick, test_nomx;
+]
+
+let test_notfound () =
+  match Dnssd.(query "doesnotexist.dave.recoil.org" MX) with
+  | Error err -> failwith (Printf.sprintf "Error looking up records for doesnotexist.dave.recoil.org: %s" (Dnssd.string_of_error err))
+  | Ok results ->
+    List.iter
+      (fun rr ->
+        Log.info (fun f -> f "doesnotexist.dave.recoil.org MX: %s" (Dnssd.string_of_rr rr))
+      ) results;
+    failwith "expected NXDomain for doesnotexist.dave.recoil.org"
+
+let test_errors = [
+  "NXDomain", `Quick, test_notfound;
 ]
 
 let () =
@@ -44,4 +71,5 @@ let () =
   );
   Alcotest.run "dnssd" [
     "types", test_types;
+    "errors", test_errors;
   ]

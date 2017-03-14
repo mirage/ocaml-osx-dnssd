@@ -89,6 +89,51 @@ CAMLprim value stub_int_of_DNSServiceType(value ty) {
   CAMLreturn(ret);
 }
 
+int table_kDNSServiceErr[] = {
+  /* kDNSServiceErr_NoError, -- not in the OCaml type */
+  kDNSServiceErr_Unknown,
+  kDNSServiceErr_NoSuchName,
+  kDNSServiceErr_NoMemory,
+  kDNSServiceErr_BadParam,
+  kDNSServiceErr_BadReference,
+  kDNSServiceErr_BadState,
+  kDNSServiceErr_BadFlags,
+  kDNSServiceErr_Unsupported,
+  kDNSServiceErr_NotInitialized,
+  kDNSServiceErr_AlreadyRegistered,
+  kDNSServiceErr_NameConflict,
+  kDNSServiceErr_Invalid,
+  kDNSServiceErr_Firewall,
+  kDNSServiceErr_Incompatible,
+  kDNSServiceErr_BadInterfaceIndex,
+  kDNSServiceErr_Refused,
+  kDNSServiceErr_NoSuchRecord,
+  kDNSServiceErr_NoAuth,
+  kDNSServiceErr_NoSuchKey,
+  kDNSServiceErr_NATTraversal,
+  kDNSServiceErr_DoubleNAT,
+  kDNSServiceErr_BadTime,
+  kDNSServiceErr_BadSig,
+  kDNSServiceErr_BadKey,
+  kDNSServiceErr_Transient,
+  kDNSServiceErr_ServiceNotRunning,
+  kDNSServiceErr_NATPortMappingUnsupported,
+  kDNSServiceErr_NATPortMappingDisabled,
+  kDNSServiceErr_NoRouter,
+  kDNSServiceErr_PollingMode,
+  kDNSServiceErr_Timeout,
+};
+
+CAMLprim value error_of_kDNSServiceErr(int c_ty) {
+  value ret = Val_int(1); /* Unknown */
+  for (int i = 0; i < sizeof(table_kDNSServiceErr) / sizeof(table_kDNSServiceErr[0]); i++) {
+    if (table_kDNSServiceErr[i] == c_ty) {
+      ret = Val_int(i);
+    }
+  }
+  return ret;
+}
+
 typedef struct _query {
   DNSServiceRef serviceRef;
   void *context;
@@ -120,7 +165,7 @@ static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t
                        DNSServiceErrorType errorCode, const char *fullname, uint16_t rrtype,
                        uint16_t rrclass, uint16_t rdlen, const void *rdata, uint32_t ttl, void *context) {
   CAMLparam0();
-  CAMLlocal3(result, record, raw);
+  CAMLlocal4(result, record, raw, code);
 
   static value *ocaml_f = NULL;
   if (ocaml_f == NULL) {
@@ -128,7 +173,6 @@ static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t
   }
   if (ocaml_f == NULL) abort();
   int c_token = *(int*)context;
-
   if (errorCode == kDNSServiceErr_NoError) {
     record = caml_alloc(4, 0);
     Store_field(record, 0, Val_int(rrtype));
@@ -137,11 +181,13 @@ static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t
     memcpy(String_val(raw), rdata, rdlen);
     Store_field(record, 2, raw);
     Store_field(record, 3, ttl);
-    result = caml_alloc(1, 0); /* Some */
+    result = caml_alloc(1, 0); /* Ok */
     Store_field(result, 0, record);
     caml_callback2(*ocaml_f, Val_int(c_token), result);
   } else {
-    result = Val_int(0); /* None */
+    result = caml_alloc(1, 1); /* Error */
+    code = error_of_kDNSServiceErr(errorCode);
+    Store_field(result, 0, code);
     caml_callback2(*ocaml_f, Val_int(c_token), result);
   }
   CAMLreturn0;
