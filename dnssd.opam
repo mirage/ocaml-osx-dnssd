@@ -12,6 +12,8 @@ tags: [
 depends: [
   "dns"
   "lwt"
+  "logs"
+  "fmt"
   "ocamlfind" {build}
   "jbuilder"  {build}
   "alcotest" {test}

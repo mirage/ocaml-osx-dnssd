@@ -15,6 +15,13 @@
  *
  *)
 
+let src =
+  let src = Logs.Src.create "dnssd" ~doc:"DNS-SD interface" in
+  Logs.Src.set_level src (Some Logs.Info);
+  src
+
+module Log = (val Logs.src_log src : Logs.LOG)
+
 type kDNSServiceType =
   | A
   | NS
@@ -184,11 +191,11 @@ let common_callback token result = match result with
   | Error err ->
     Hashtbl.replace in_progress_calls token (Error err)
   | Ok this ->
+    let buf = Cstruct.create (Bytes.length this.cb_rrdata) in
+    Cstruct.blit_from_bytes this.cb_rrdata 0 buf 0 (Bytes.length this.cb_rrdata);
     let rr = match Dns.Packet.int_to_rr_type this.cb_rrtype with
       | None -> None
       | Some rrtype ->
-        let buf = Cstruct.create (Bytes.length this.cb_rrdata) in
-        Cstruct.blit_from_bytes this.cb_rrdata 0 buf 0 (Bytes.length this.cb_rrdata);
         begin
           try
             let rdata = Dns.Packet.parse_rdata (Hashtbl.create 1) 0 rrtype this.cb_rrclass (Int32.of_int this.cb_ttl) buf in
@@ -202,7 +209,14 @@ let common_callback token result = match result with
             None
         end in
     begin match rr with
-    | None -> ()
+    | None ->
+      Log.warn (fun f ->
+        let buffer = Buffer.create 128 in
+        Cstruct.hexdump_to_buffer buffer buf;
+        f "Failed to parse resource record: fullname = %s; rrtype = %d; rrclass = %d; rrdata(%d) = %s; ttl = %d"
+          this.cb_fullname this.cb_rrtype this.cb_rrclass (Bytes.length this.cb_rrdata)
+          (Buffer.contents buffer) this.cb_ttl
+      )
     | Some rr ->
       if Hashtbl.mem in_progress_calls token then begin
         match Hashtbl.find in_progress_calls token with
