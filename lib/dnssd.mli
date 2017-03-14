@@ -73,14 +73,22 @@ module LowLevel: sig
   (** [query name type] creates a query for [name] and [type]. This call does
       not block. *)
 
+  exception Cancelled
+  (** Raised if an operation is called on a cancelled query *)
+
   val socket: query -> Unix.file_descr
   (** [socket query] returns the underlying Unix domain socket suitable for
       [select()] [kqueue] etc. When the socket is readable, [response] can be
-      called without blocking (very much) *)
+      called without blocking (very much).
+      This raises [Cancelled] if the query has been cancelled. *)
 
   val response: query -> (Dns.Packet.rr list, error) result
   (** [response query] reads the responses which have arrived for [query].
       This function will block unless the caller has waited for events on the
-      Unix domain socket. *)
+      Unix domain socket.
+      This raises [Cancelled] if the query has been cancelled. *)
 
+  val cancel: query -> unit
+  (** [cancel query] causes an outstanding query to be cancelled and resources
+      freed *)
 end
