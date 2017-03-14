@@ -29,7 +29,7 @@ let test_mx () =
   | Ok results ->
     List.iter
       (fun rr ->
-        Log.info (fun f -> f "google.com MX: %s" (Dnssd.string_of_rr rr))
+        Log.info (fun f -> f "google.com MX: %s" (Dnssd.string_of_response rr))
       ) results
 
 let test_nomx () =
@@ -38,7 +38,7 @@ let test_nomx () =
   | Ok results ->
     List.iter
       (fun rr ->
-        Log.info (fun f -> f "dave.recoil.org MX: %s" (Dnssd.string_of_rr rr))
+        Log.info (fun f -> f "dave.recoil.org MX: %s" (Dnssd.string_of_response rr))
       ) results
     (* FIXME: check the type of the records *)
 
@@ -53,7 +53,7 @@ let test_notfound () =
   | Ok results ->
     List.iter
       (fun rr ->
-        Log.info (fun f -> f "doesnotexist.dave.recoil.org MX: %s" (Dnssd.string_of_rr rr))
+        Log.info (fun f -> f "doesnotexist.dave.recoil.org MX: %s" (Dnssd.string_of_response rr))
       ) results;
     failwith "expected NXDomain for doesnotexist.dave.recoil.org"
 

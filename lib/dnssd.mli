@@ -92,7 +92,7 @@ type kDNSServiceType =
   | ANY        (** Wildcard match. *)
 (** DNS record type *)
 
-type rr = {
+type response = {
   rrtype: Dns.Packet.rr_type option;
   rrclass: Dns.Packet.rr_class option;
   rrdata: Dns.Packet.rdata option;
@@ -100,7 +100,7 @@ type rr = {
 }
 (** A DNS resource record *)
 
-val string_of_rr: rr -> string
+val string_of_response: response -> string
 
 type error =
   | Unknown
@@ -138,6 +138,6 @@ type error =
 
 val string_of_error: error -> string
 
-val query: string -> kDNSServiceType -> (rr list, error) result
+val query: string -> kDNSServiceType -> (response list, error) result
 (** [query name ty] returns a list of resource records of type [ty] bound to
     [name] *)

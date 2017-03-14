@@ -168,14 +168,14 @@ type cb_result = {
   cb_ttl: int;
 }
 
-type rr = {
+type response = {
   rrtype: Dns.Packet.rr_type option;
   rrclass: Dns.Packet.rr_class option;
   rrdata: Dns.Packet.rdata option;
   ttl: int;
 }
 
-let string_of_rr rr =
+let string_of_response rr =
   Printf.sprintf "{ rrtype = %s; rrclass = %s; rrdata = %s; ttl = %d }"
     (match rr.rrtype with None -> "None" | Some x -> Dns.Packet.rr_type_to_string x)
     (match rr.rrclass with None -> "Some" | Some x -> Dns.Packet.rr_class_to_string x)
