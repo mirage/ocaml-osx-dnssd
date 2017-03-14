@@ -92,13 +92,6 @@ type kDNSServiceType =
   | ANY        (** Wildcard match. *)
 (** DNS record type *)
 
-type response = {
-  rr: Dns.Packet.rr option;
-}
-(** A query response *)
-
-val string_of_response: response -> string
-
 type error =
   | Unknown
   | NoSuchName
@@ -135,6 +128,6 @@ type error =
 
 val string_of_error: error -> string
 
-val query: string -> kDNSServiceType -> (response list, error) result
+val query: string -> kDNSServiceType -> (Dns.Packet.rr list, error) result
 (** [query name ty] returns a list of resource records of type [ty] bound to
     [name] *)

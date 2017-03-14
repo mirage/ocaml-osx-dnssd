@@ -169,14 +169,6 @@ type cb_result = {
   cb_ttl: int;
 }
 
-type response = {
-  rr: Dns.Packet.rr option;
-}
-
-let string_of_response = function
-  | { rr = None } -> "None"
-  | { rr = Some x } -> "Some " ^ (Dns.Packet.rr_to_string x)
-
 (* Accumulate the results here *)
 let in_progress_calls = Hashtbl.create 7
 
@@ -209,12 +201,15 @@ let common_callback token result = match result with
           with Dns.Packet.Not_implemented ->
             None
         end in
-    let response = { rr } in
-    if Hashtbl.mem in_progress_calls token then begin
-      match Hashtbl.find in_progress_calls token with
-      | Error _ -> () (* keep the error *)
-      | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (response :: existing))
-    end else Hashtbl.replace in_progress_calls token (Ok [ response ])
+    begin match rr with
+    | None -> ()
+    | Some rr ->
+      if Hashtbl.mem in_progress_calls token then begin
+        match Hashtbl.find in_progress_calls token with
+        | Error _ -> () (* keep the error *)
+        | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (rr :: existing))
+      end else Hashtbl.replace in_progress_calls token (Ok [ rr ])
+    end
 
 let query name ty =
   let ty' = int_of_DNSServiceType ty in
