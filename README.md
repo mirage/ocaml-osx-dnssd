@@ -5,3 +5,15 @@ are used to perform generic DNS queries using the macOS resolver.
 This is the best way to ensure that the query results match the
 results obtained by other apps on OSX.
 
+## Usage example
+
+In a toplevel:
+
+```ocaml
+Dnssd.query "dave.recoil.org" Dns.Packet.Q_A;;
+- : (Dns.Packet.rr list, Dnssd.error) result =
+Ok
+  [{Dns.Packet.name = <abstr>; cls = Dns.Packet.RR_IN; flush = false; ttl = 187l; rdata = Dns.Packet.A <abstr>};
+   {Dns.Packet.name = <abstr>; cls = Dns.Packet.RR_IN; flush = false; ttl = 187l; rdata = Dns.Packet.CNAME <abstr>};
+   {Dns.Packet.name = <abstr>; cls = Dns.Packet.RR_IN; flush = false; ttl = 187l; rdata = Dns.Packet.CNAME <abstr>}]
+```
