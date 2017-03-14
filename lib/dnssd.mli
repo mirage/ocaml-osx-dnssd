@@ -92,16 +92,8 @@ type kDNSServiceType =
   | ANY        (** Wildcard match. *)
 (** DNS record type *)
 
-type rr = {
-  name: Dns.Name.t;
-  cls: Dns.Packet.rr_class;
-  ttl: int32;
-  rdata: Dns.Packet.rdata;
-}
-(** A DNS resource record *)
-
 type response = {
-  rr: rr option;
+  rr: Dns.Packet.rr option;
 }
 (** A query response *)
 

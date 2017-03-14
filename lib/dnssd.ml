@@ -169,26 +169,13 @@ type cb_result = {
   cb_ttl: int;
 }
 
-type rr = {
-  name: Dns.Name.t;
-  cls: Dns.Packet.rr_class;
-  ttl: int32;
-  rdata: Dns.Packet.rdata;
-}
-(** A DNS resource record *)
-
 type response = {
-  rr: rr option;
+  rr: Dns.Packet.rr option;
 }
 
 let string_of_response = function
   | { rr = None } -> "None"
-  | { rr = Some { name; cls; ttl; rdata } } ->
-    Printf.sprintf "Some { name = %s; cls = %s; ttl = %ld; rdata = %s }"
-    (Dns.Name.to_string name)
-    (Dns.Packet.rr_class_to_string cls)
-    ttl
-    (Dns.Packet.rdata_to_string rdata)
+  | { rr = Some x } -> "Some " ^ (Dns.Packet.rr_to_string x)
 
 (* Accumulate the results here *)
 let in_progress_calls = Hashtbl.create 7
@@ -213,8 +200,11 @@ let common_callback token result = match result with
         begin
           try
             let rdata = Dns.Packet.parse_rdata (Hashtbl.create 1) 0 rrtype this.cb_rrclass (Int32.of_int this.cb_ttl) buf in
+            let name = Dns.Name.of_string this.cb_fullname in
+            let cls = Dns.Packet.RR_IN in
+            let ttl = Int32.of_int this.cb_ttl in
             if this.cb_rrclass = 1
-            then Some { name = Dns.Name.of_string this.cb_fullname; cls = Dns.Packet.RR_IN; ttl = Int32.of_int this.cb_ttl; rdata }
+            then Some { Dns.Packet.name; cls; flush = false; ttl; rdata }
             else None
           with Dns.Packet.Not_implemented ->
             None
