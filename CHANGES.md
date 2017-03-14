@@ -1,3 +1,5 @@
+## 0.2 (2017-03-14)
+- add `is_supported_on_this_platform` API
 
 ## 0.1 (2017-03-14)
 - a simple blocking API
