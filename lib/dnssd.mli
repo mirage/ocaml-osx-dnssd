@@ -62,3 +62,20 @@ val string_of_error: error -> string
 val query: string -> Dns.Packet.q_type -> (Dns.Packet.rr list, error) result
 (** [query name ty] returns a list of resource records of type [ty] bound to
     [name] *)
+
+module LowLevel: sig
+  (** A low-level interface which exposes the Unix domain socket used to talk
+      to the daemon. *)
+
+  type query
+
+  val query: string -> Dns.Packet.q_type -> query
+  (** [query name type] creates a query for [name] and [type]. This call does
+      not block. *)
+
+  val response: query -> (Dns.Packet.rr list, error) result
+  (** [response query] reads the responses which have arrived for [query].
+      This function will block unless the caller has waited for events on the
+      Unix domain socket. *)
+
+end

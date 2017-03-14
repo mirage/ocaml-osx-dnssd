@@ -222,7 +222,7 @@ let string_of_error = function
 
 (* Low-level, unsafe APIs *)
 
-type query (* wraps a DNSServiceRef *)
+type dNSServiceRef
 
 let next_token =
   let i = ref 0 in
@@ -245,11 +245,11 @@ let in_progress_calls = Hashtbl.create 7
 
 type token = int
 
-external query_record: string -> int -> token -> query = "stub_query_record"
+external query_record: string -> int -> token -> dNSServiceRef = "stub_query_record"
 
-external query_process: query -> unit = "stub_query_process"
+external query_process: dNSServiceRef -> unit = "stub_query_process"
 
-external query_deallocate: query -> unit = "stub_query_deallocate"
+external query_deallocate: dNSServiceRef -> unit = "stub_query_deallocate"
 
 let common_callback token result = match result with
   | Error err ->
@@ -302,6 +302,31 @@ let query name ty =
     Hashtbl.remove in_progress_calls token;
     query_deallocate q;
     result
+
+module LowLevel = struct
+  type query = {
+    query: dNSServiceRef;
+    token: int;
+  }
+
+  let query name ty =
+    match kDNSServiceType_of_q_type ty with
+    | Error (`Msg m) -> failwith m
+    | Ok ty' ->
+      let ty'' = int_of_DNSServiceType ty' in
+      if ty'' < 0 then failwith "Unrecognised query type";
+      let token = next_token () in
+      let query = query_record name ty'' token in
+      { query; token }
+
+  let response { query; token } =
+    query_process query;
+    let result = Hashtbl.find in_progress_calls token in
+    Hashtbl.remove in_progress_calls token;
+    query_deallocate query;
+    result
+
+end
 
 let () =
   Callback.register "ocaml-osx-dnssd" common_callback
