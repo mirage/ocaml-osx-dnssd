@@ -210,6 +210,14 @@ CAMLprim value stub_query_record(value name, value ty, value token) {
   CAMLreturn(v);
 }
 
+CAMLprim value stub_query_fd(value v) {
+  CAMLparam1(v);
+  query *q = Query_val(v);
+  int fd = DNSServiceRefSockFD(q->serviceRef);
+  if (fd == -1) caml_failwith("DNSServiceRefSocketFD");
+  CAMLreturn(Val_int(fd));
+}
+
 CAMLprim value stub_query_process(value v) {
   CAMLparam1(v);
   query *q = Query_val(v);

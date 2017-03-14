@@ -247,6 +247,8 @@ type token = int
 
 external query_record: string -> int -> token -> dNSServiceRef = "stub_query_record"
 
+external query_fd: dNSServiceRef -> Unix.file_descr = "stub_query_fd"
+
 external query_process: dNSServiceRef -> unit = "stub_query_process"
 
 external query_deallocate: dNSServiceRef -> unit = "stub_query_deallocate"
@@ -318,6 +320,9 @@ module LowLevel = struct
       let token = next_token () in
       let query = query_record name ty'' token in
       { query; token }
+
+  let socket { query; _ } =
+    query_fd query
 
   let response { query; token } =
     query_process query;

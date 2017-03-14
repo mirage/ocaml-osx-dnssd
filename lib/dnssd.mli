@@ -73,6 +73,11 @@ module LowLevel: sig
   (** [query name type] creates a query for [name] and [type]. This call does
       not block. *)
 
+  val socket: query -> Unix.file_descr
+  (** [socket query] returns the underlying Unix domain socket suitable for
+      [select()] [kqueue] etc. When the socket is readable, [response] can be
+      called without blocking (very much) *)
+
   val response: query -> (Dns.Packet.rr list, error) result
   (** [response query] reads the responses which have arrived for [query].
       This function will block unless the caller has waited for events on the
