@@ -202,7 +202,7 @@ CAMLprim value stub_query_record(value name, value ty, value token) {
   int c_ty = Int_val(ty);
   q->context = malloc(sizeof(int));
   *(int*)(q->context) = Int_val(token);
-  DNSServiceQueryRecord(&q->serviceRef, 0, 0, c_name, c_ty,
+  DNSServiceQueryRecord(&q->serviceRef, kDNSServiceFlagsTimeout | kDNSServiceFlagsReturnIntermediates, 0, c_name, c_ty,
                         kDNSServiceClass_IN, common_callback, q->context);
   q->finalized = false;
   CAMLreturn(v);
