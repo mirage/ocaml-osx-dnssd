@@ -168,19 +168,26 @@ type cb_result = {
   cb_ttl: int;
 }
 
-type response = {
-  rrtype: Dns.Packet.rr_type option;
-  rrclass: Dns.Packet.rr_class option;
-  rrdata: Dns.Packet.rdata option;
+type rr = {
+  rrtype: Dns.Packet.rr_type;
+  rrclass: Dns.Packet.rr_class;
+  rrdata: Dns.Packet.rdata;
   ttl: int;
 }
+(** A DNS resource record *)
 
-let string_of_response rr =
-  Printf.sprintf "{ rrtype = %s; rrclass = %s; rrdata = %s; ttl = %d }"
-    (match rr.rrtype with None -> "None" | Some x -> Dns.Packet.rr_type_to_string x)
-    (match rr.rrclass with None -> "Some" | Some x -> Dns.Packet.rr_class_to_string x)
-    (match rr.rrdata with None -> "None" | Some x -> Dns.Packet.rdata_to_string x)
-    rr.ttl
+type response = {
+  rr: rr option;
+}
+
+let string_of_response = function
+  | { rr = None } -> "None"
+  | { rr = Some { rrtype; rrclass; rrdata; ttl } } ->
+    Printf.sprintf "Some { rrtype = %s; rrclass = %s; rrdata = %s; ttl = %d }"
+    (Dns.Packet.rr_type_to_string rrtype)
+    (Dns.Packet.rr_class_to_string rrclass)
+    (Dns.Packet.rdata_to_string rrdata)
+    ttl
 
 (* Accumulate the results here *)
 let in_progress_calls = Hashtbl.create 7
@@ -197,28 +204,26 @@ let common_callback token result = match result with
   | Error err ->
     Hashtbl.replace in_progress_calls token (Error err)
   | Ok this ->
-    let rrdata = match Dns.Packet.int_to_rr_type this.cb_rrtype with
+    let rr = match Dns.Packet.int_to_rr_type this.cb_rrtype with
+      | None -> None
       | Some rrtype ->
         let buf = Cstruct.create (Bytes.length this.cb_rrdata) in
         Cstruct.blit_from_bytes this.cb_rrdata 0 buf 0 (Bytes.length this.cb_rrdata);
         begin
           try
-            Some (Dns.Packet.parse_rdata (Hashtbl.create 1) 0 rrtype this.cb_rrclass (Int32.of_int this.cb_ttl) buf)
+            let rrdata = Dns.Packet.parse_rdata (Hashtbl.create 1) 0 rrtype this.cb_rrclass (Int32.of_int this.cb_ttl) buf in
+            if this.cb_rrclass = 1
+            then Some { rrtype; rrclass = Dns.Packet.RR_IN; rrdata; ttl = this.cb_ttl }
+            else None
           with Dns.Packet.Not_implemented ->
             None
-        end
-      | None -> None in
-    let rr = {
-      rrtype = Dns.Packet.int_to_rr_type this.cb_rrtype;
-      rrclass = (match this.cb_rrclass with 1 -> Some Dns.Packet.RR_IN | _ -> None);
-      rrdata;
-      ttl = this.cb_ttl;
-    } in
+        end in
+    let response = { rr } in
     if Hashtbl.mem in_progress_calls token then begin
       match Hashtbl.find in_progress_calls token with
       | Error _ -> () (* keep the error *)
-      | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (rr :: existing))
-    end else Hashtbl.replace in_progress_calls token (Ok [ rr ])
+      | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (response :: existing))
+    end else Hashtbl.replace in_progress_calls token (Ok [ response ])
 
 let query name ty =
   let ty' = int_of_DNSServiceType ty in

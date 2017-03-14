@@ -92,13 +92,18 @@ type kDNSServiceType =
   | ANY        (** Wildcard match. *)
 (** DNS record type *)
 
-type response = {
-  rrtype: Dns.Packet.rr_type option;
-  rrclass: Dns.Packet.rr_class option;
-  rrdata: Dns.Packet.rdata option;
+type rr = {
+  rrtype: Dns.Packet.rr_type;
+  rrclass: Dns.Packet.rr_class;
+  rrdata: Dns.Packet.rdata;
   ttl: int;
 }
 (** A DNS resource record *)
+
+type response = {
+  rr: rr option;
+}
+(** A query response *)
 
 val string_of_response: response -> string
 
