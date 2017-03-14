@@ -2,7 +2,6 @@
 .PHONY: build clean test
 
 build:
-	jbuilder build lib_test/test.exe
 	jbuilder build @install
 
 test:
