@@ -136,7 +136,7 @@ CAMLprim value stub_query_record(value name, value ty, value id) {
   char *c_name = String_val(name);
   int c_ty = Int_val(ty);
   q->context = malloc(sizeof(int));
-  *(int*)(q->context) = Int_val(ty);
+  *(int*)(q->context) = Int_val(id);
   DNSServiceQueryRecord(&q->serviceRef, 0, 0, c_name, c_ty,
                         kDNSServiceClass_IN, common_callback, q->context);
   q->finalized = false;
