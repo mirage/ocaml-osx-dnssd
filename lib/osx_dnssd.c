@@ -81,7 +81,7 @@ CAMLprim value stub_int_of_DNSServiceType(value ty) {
   CAMLparam1(ty);
   CAMLlocal1(ret);
   int c_ty = Int_val(ty);
-  if (c_ty >= sizeof(table_DNSServiceType)) {
+  if (c_ty >= sizeof(table_DNSServiceType) / sizeof(table_DNSServiceType[0])) {
     ret = Val_int(-1);
   } else {
     ret = Val_int(table_DNSServiceType[c_ty]);
