@@ -49,6 +49,7 @@ let test_types = [
 
 let test_notfound () =
   match Dnssd.(query "doesnotexist.dave.recoil.org" MX) with
+  | Error Dnssd.NoSuchRecord -> ()
   | Error err -> failwith (Printf.sprintf "Error looking up records for doesnotexist.dave.recoil.org: %s" (Dnssd.string_of_error err))
   | Ok results ->
     List.iter
