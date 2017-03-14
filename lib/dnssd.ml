@@ -161,16 +161,25 @@ let next_token =
     this
 
 (* The callback fires once per result *)
+type cb_result = {
+  cb_rrtype: int;
+  cb_rrclass: int;
+  cb_rrdata: Bytes.t;
+  cb_ttl: int;
+}
+
 type rr = {
+  rrtype: Dns.Packet.rr_type option;
   rrclass: int;
-  rrtype: int;
   rrdata: Bytes.t;
   ttl: int;
 }
 
 let string_of_rr rr =
-  Printf.sprintf "{ rrclass = %d; rrtype = %d; rrdata(%d) = %s; ttl = %d }"
-    rr.rrclass rr.rrtype (Bytes.length rr.rrdata) rr.rrdata rr.ttl
+  Printf.sprintf "{ rrtype = %s; rrclass = %d; rrdata(%d) = %s; ttl = %d }"
+    (match rr.rrtype with None -> "None" | Some x -> Dns.Packet.rr_type_to_string x)
+    rr.rrclass
+    (Bytes.length rr.rrdata) rr.rrdata rr.ttl
 
 (* Accumulate the results here *)
 let in_progress_calls = Hashtbl.create 7
@@ -187,11 +196,17 @@ let common_callback token result = match result with
   | Error err ->
     Hashtbl.replace in_progress_calls token (Error err)
   | Ok this ->
+    let rr = {
+      rrtype = Dns.Packet.int_to_rr_type this.cb_rrtype;
+      rrclass = this.cb_rrclass;
+      rrdata = this.cb_rrdata;
+      ttl = this.cb_ttl;
+    } in
     if Hashtbl.mem in_progress_calls token then begin
       match Hashtbl.find in_progress_calls token with
       | Error _ -> () (* keep the error *)
-      | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (this :: existing))
-    end else Hashtbl.replace in_progress_calls token (Ok [ this ])
+      | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (rr :: existing))
+    end else Hashtbl.replace in_progress_calls token (Ok [ rr ])
 
 let query name ty =
   let ty' = int_of_DNSServiceType ty in
