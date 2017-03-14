@@ -23,7 +23,7 @@ let src =
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let test_mx () =
-  match Dnssd.(query "google.com" MX) with
+  match Dnssd.(query "google.com" Dns.Packet.Q_MX) with
   | Error err -> failwith (Printf.sprintf "Error looking up MX records for google.com: %s" (Dnssd.string_of_error err))
   | Ok [] -> failwith "No MX records found for google.com";
   | Ok results ->
@@ -33,7 +33,7 @@ let test_mx () =
       ) results
 
 let test_nomx () =
-  match Dnssd.(query "dave.recoil.org" MX) with
+  match Dnssd.(query "dave.recoil.org" Dns.Packet.Q_MX) with
   | Error err -> failwith (Printf.sprintf "Error looking up records for dave.recoil.org: %s" (Dnssd.string_of_error err))
   | Ok results ->
     List.iter
@@ -48,7 +48,7 @@ let test_types = [
 ]
 
 let test_notfound () =
-  match Dnssd.(query "doesnotexist.dave.recoil.org" MX) with
+  match Dnssd.(query "doesnotexist.dave.recoil.org" Dns.Packet.Q_MX) with
   | Error Dnssd.NoSuchRecord -> ()
   | Error err -> failwith (Printf.sprintf "Error looking up records for doesnotexist.dave.recoil.org: %s" (Dnssd.string_of_error err))
   | Ok results ->

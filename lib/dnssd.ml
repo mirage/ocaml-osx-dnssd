@@ -90,6 +90,70 @@ type kDNSServiceType =
 
 external int_of_DNSServiceType: kDNSServiceType -> int = "stub_int_of_DNSServiceType"
 
+let kDNSServiceType_of_q_type = function
+  | Dns.Packet.Q_A -> Ok A
+  | Dns.Packet.Q_NS -> Ok NS
+  | Dns.Packet.Q_MD -> Ok MD
+  | Dns.Packet.Q_MF -> Ok MF
+  | Dns.Packet.Q_CNAME -> Ok CNAME
+  | Dns.Packet.Q_SOA -> Ok SOA
+  | Dns.Packet.Q_MB -> Ok MB
+  | Dns.Packet.Q_MG -> Ok MG
+  | Dns.Packet.Q_MR -> Ok MR
+  | Dns.Packet.Q_NULL -> Ok NULL
+  | Dns.Packet.Q_WKS -> Ok WKS
+  | Dns.Packet.Q_PTR -> Ok PTR
+  | Dns.Packet.Q_HINFO -> Ok HINFO
+  | Dns.Packet.Q_MINFO -> Ok MINFO
+  | Dns.Packet.Q_MX -> Ok MX
+  | Dns.Packet.Q_TXT -> Ok TXT
+  | Dns.Packet.Q_RP -> Ok RP
+  | Dns.Packet.Q_AFSDB -> Ok AFSDB
+  | Dns.Packet.Q_X25 -> Ok X25
+  | Dns.Packet.Q_ISDN -> Ok ISDN
+  | Dns.Packet.Q_RT -> Ok RT
+  | Dns.Packet.Q_NSAP -> Ok NSAP
+  | Dns.Packet.Q_NSAPPTR -> Error (`Msg "NSAPPTR query type not supported")
+  | Dns.Packet.Q_SIG -> Ok SIG
+  | Dns.Packet.Q_KEY -> Ok KEY
+  | Dns.Packet.Q_PX -> Ok PX
+  | Dns.Packet.Q_GPOS -> Ok GPOS
+  | Dns.Packet.Q_AAAA -> Ok AAAA
+  | Dns.Packet.Q_LOC -> Ok LOC
+  | Dns.Packet.Q_NXT -> Ok NXT
+  | Dns.Packet.Q_EID -> Ok EID
+  | Dns.Packet.Q_NIMLOC -> Ok NIMLOC
+  | Dns.Packet.Q_SRV -> Ok SRV
+  | Dns.Packet.Q_ATMA -> Ok ATMA
+  | Dns.Packet.Q_NAPTR -> Ok NAPTR
+  | Dns.Packet.Q_KM -> Error (`Msg "KM query type not supported")
+  | Dns.Packet.Q_CERT -> Ok CERT
+  | Dns.Packet.Q_A6 -> Ok A6
+  | Dns.Packet.Q_DNAME -> Ok DNAME
+  | Dns.Packet.Q_SINK -> Ok SINK
+  | Dns.Packet.Q_OPT -> Ok OPT
+  | Dns.Packet.Q_APL -> Ok APL
+  | Dns.Packet.Q_DS -> Ok DS
+  | Dns.Packet.Q_SSHFP -> Ok SSHFP
+  | Dns.Packet.Q_IPSECKEY -> Ok IPSECKEY
+  | Dns.Packet.Q_RRSIG -> Ok RRSIG
+  | Dns.Packet.Q_NSEC -> Ok NSEC
+  | Dns.Packet.Q_DNSKEY -> Ok DNSKEY
+  | Dns.Packet.Q_NSEC3 -> Ok NSEC3
+  | Dns.Packet.Q_NSEC3PARAM -> Ok NSEC3PARAM
+  | Dns.Packet.Q_SPF -> Ok SPF
+  | Dns.Packet.Q_UINFO -> Ok UINFO
+  | Dns.Packet.Q_UID -> Ok UID
+  | Dns.Packet.Q_GID -> Ok GID
+  | Dns.Packet.Q_UNSPEC -> Ok UNSPEC
+  | Dns.Packet.Q_AXFR -> Ok AXFR
+  | Dns.Packet.Q_MAILB -> Ok MAILB
+  | Dns.Packet.Q_MAILA -> Ok MAILA
+  | Dns.Packet.Q_ANY_TYP -> Error (`Msg "ANY_TYP query type not supported")
+  | Dns.Packet.Q_TA -> Error (`Msg "TA query type not supported")
+  | Dns.Packet.Q_DLV -> Error (`Msg "DLV query type not supported")
+  | Dns.Packet.Q_UNKNOWN x -> Error (`Msg (Printf.sprintf "Unknown query type %d" x))
+
 type error =
   | Unknown
   | NoSuchName
@@ -226,15 +290,18 @@ let common_callback token result = match result with
     end
 
 let query name ty =
-  let ty' = int_of_DNSServiceType ty in
-  if ty' < 0 then failwith "Unrecognised query type";
-  let token = next_token () in
-  let q = query_record name ty' token in
-  query_process q;
-  let result = Hashtbl.find in_progress_calls token in
-  Hashtbl.remove in_progress_calls token;
-  query_deallocate q;
-  result
+  match kDNSServiceType_of_q_type ty with
+  | Error (`Msg m) -> failwith m
+  | Ok ty' ->
+    let ty'' = int_of_DNSServiceType ty' in
+    if ty'' < 0 then failwith "Unrecognised query type";
+    let token = next_token () in
+    let q = query_record name ty'' token in
+    query_process q;
+    let result = Hashtbl.find in_progress_calls token in
+    Hashtbl.remove in_progress_calls token;
+    query_deallocate q;
+    result
 
 let () =
   Callback.register "ocaml-osx-dnssd" common_callback
