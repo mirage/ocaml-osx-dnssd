@@ -92,6 +92,18 @@ let test_lowlevel = [
   "cancel", `Quick, test_cancel;
 ]
 
+let test_1000 () =
+  for _ = 0 to 1000 do
+    match Dnssd.(query "google.com" Dns.Packet.Q_MX) with
+    | Error err -> failwith (Printf.sprintf "Error looking up MX records for google.com: %s" (Dnssd.string_of_error err))
+    | Ok [] -> failwith "No MX records found for google.com";
+    | Ok _ -> ()
+  done
+
+let test_perf = [
+  "1000", `Quick, test_1000;
+]
+
 let () =
   Logs.set_reporter (Logs_fmt.reporter ());
   Lwt.async_exception_hook := (fun exn ->
@@ -104,4 +116,5 @@ let () =
     "types", test_types;
     "errors", test_errors;
     "lowlevel", test_lowlevel;
+    "performance", test_perf;
   ]
