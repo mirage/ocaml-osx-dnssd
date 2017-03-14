@@ -174,13 +174,15 @@ static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t
   if (ocaml_f == NULL) abort();
   int c_token = *(int*)context;
   if (errorCode == kDNSServiceErr_NoError) {
-    record = caml_alloc(4, 0);
-    Store_field(record, 0, Val_int(rrtype));
-    Store_field(record, 1, Val_int(rrclass));
+    record = caml_alloc(5, 0);
+    raw = caml_copy_string(fullname);
+    Store_field(record, 0, raw);
+    Store_field(record, 1, Val_int(rrtype));
+    Store_field(record, 2, Val_int(rrclass));
     raw = caml_alloc_string(rdlen);
     memcpy(String_val(raw), rdata, rdlen);
-    Store_field(record, 2, raw);
-    Store_field(record, 3, ttl);
+    Store_field(record, 3, raw);
+    Store_field(record, 4, ttl);
     result = caml_alloc(1, 0); /* Ok */
     Store_field(result, 0, record);
     caml_callback2(*ocaml_f, Val_int(c_token), result);

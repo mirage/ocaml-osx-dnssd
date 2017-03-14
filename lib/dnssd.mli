@@ -93,6 +93,7 @@ type kDNSServiceType =
 (** DNS record type *)
 
 type rr = {
+  name: Dns.Name.t;
   cls: Dns.Packet.rr_class;
   ttl: int32;
   rdata: Dns.Packet.rdata;
