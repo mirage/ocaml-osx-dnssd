@@ -23,6 +23,10 @@
 
 *)
 
+val is_supported_on_this_platform: unit -> bool
+(** [is_supported_on_this_platform ()] is [true] if this library is supported
+    on this platform. On other platforms the APIs may throw runtime failures. *)
+
 type error =
   | Unknown
   | NoSuchName

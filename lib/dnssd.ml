@@ -253,6 +253,8 @@ external query_process: dNSServiceRef -> unit = "stub_query_process"
 
 external query_deallocate: dNSServiceRef -> unit = "stub_query_deallocate"
 
+external is_supported_on_this_platform: unit -> bool = "stub_is_supported_on_this_platform"
+
 let common_callback token result = match result with
   | Error err ->
     Hashtbl.replace in_progress_calls token (Error err)
