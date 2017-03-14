@@ -20,9 +20,10 @@ depends: [
 ]
 
 build: [
-  [ "jbuilder" "build" "lib/dnssd.cmxa" ]
+  [ make "build" ]
 ]
 build-test: [
-  [ "jbuilder" "build" "lib_test/test.exe" ]
+  [ make "test" ]
 ]
+
 available: [ocaml-version >= "4.03.0"]
