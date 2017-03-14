@@ -170,15 +170,15 @@ type cb_result = {
 
 type rr = {
   rrtype: Dns.Packet.rr_type option;
-  rrclass: int;
+  rrclass: Dns.Packet.rr_class option;
   rrdata: Bytes.t;
   ttl: int;
 }
 
 let string_of_rr rr =
-  Printf.sprintf "{ rrtype = %s; rrclass = %d; rrdata(%d) = %s; ttl = %d }"
+  Printf.sprintf "{ rrtype = %s; rrclass = %s; rrdata(%d) = %s; ttl = %d }"
     (match rr.rrtype with None -> "None" | Some x -> Dns.Packet.rr_type_to_string x)
-    rr.rrclass
+    (match rr.rrclass with None -> "Some" | Some x -> Dns.Packet.rr_class_to_string x)
     (Bytes.length rr.rrdata) rr.rrdata rr.ttl
 
 (* Accumulate the results here *)
@@ -198,7 +198,7 @@ let common_callback token result = match result with
   | Ok this ->
     let rr = {
       rrtype = Dns.Packet.int_to_rr_type this.cb_rrtype;
-      rrclass = this.cb_rrclass;
+      rrclass = (match this.cb_rrclass with 1 -> Some Dns.Packet.RR_IN | _ -> None);
       rrdata = this.cb_rrdata;
       ttl = this.cb_ttl;
     } in

@@ -94,7 +94,7 @@ type kDNSServiceType =
 
 type rr = {
   rrtype: Dns.Packet.rr_type option;
-  rrclass: int;
+  rrclass: Dns.Packet.rr_class option;
   rrdata: Bytes.t;
   ttl: int;
 }
