@@ -278,3 +278,13 @@ CAMLprim value stub_query_deallocate(value v) {
   q->finalized = true;
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value stub_is_supported_on_this_platform(value unit) {
+  CAMLparam1(unit);
+  CAMLlocal1(ret);
+  ret = Val_int(0);
+#if defined(__APPLE__)
+  ret = Val_int(1);
+#endif
+  CAMLreturn(ret);
+}

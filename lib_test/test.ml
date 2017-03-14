@@ -104,6 +104,20 @@ let test_perf = [
   "1000", `Quick, test_1000;
 ]
 
+let test_supported () =
+  let ic = Unix.open_process_in "uname" in
+  let os = input_line ic in
+  close_in ic;
+  if Dnssd.is_supported_on_this_platform () then begin
+    if os <> "Darwin" then failwith (Printf.sprintf "should only be supported on Darwin, not '%s'" os)
+  end else begin
+    if os = "Darwin" then failwith "is supposed to be supported on Darwin"
+  end
+
+let test_misc = [
+  "supported", `Quick, test_supported;
+]
+
 let () =
   Logs.set_reporter (Logs_fmt.reporter ());
   Lwt.async_exception_hook := (fun exn ->
@@ -117,4 +131,5 @@ let () =
     "errors", test_errors;
     "lowlevel", test_lowlevel;
     "performance", test_perf;
+    "misc", test_misc;
   ]
