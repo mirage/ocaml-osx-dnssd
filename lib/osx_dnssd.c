@@ -128,15 +128,15 @@ static void common_callback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t
   caml_callback(*ocaml_f, Val_int(c_id));
 }
 
-CAMLprim value stub_query_record(value name, value ty, value id) {
-  CAMLparam3(name, ty, id);
+CAMLprim value stub_query_record(value name, value ty, value token) {
+  CAMLparam3(name, ty, token);
   CAMLlocal1(v);
   v = caml_alloc_custom(&query_custom_ops, sizeof(query), 0, 1);
   query *q = Query_val(v);
   char *c_name = String_val(name);
   int c_ty = Int_val(ty);
   q->context = malloc(sizeof(int));
-  *(int*)(q->context) = Int_val(id);
+  *(int*)(q->context) = Int_val(token);
   DNSServiceQueryRecord(&q->serviceRef, 0, 0, c_name, c_ty,
                         kDNSServiceClass_IN, common_callback, q->context);
   q->finalized = false;
