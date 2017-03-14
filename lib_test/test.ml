@@ -76,8 +76,20 @@ let test_select () =
         Log.info (fun f -> f "dave.recoil.org A: %s" (Dns.Packet.rr_to_string rr))
       ) results
 
+let test_cancel () =
+  let open Dnssd.LowLevel in
+  let q = query "dave.recoil.org" Dns.Packet.Q_A in
+  cancel q;
+  try
+    let _ = response q in
+    failwith "test_cancel expected an exception"
+  with Cancelled ->
+    ()
+  | e -> raise e
+
 let test_lowlevel = [
   "select", `Quick, test_select;
+  "cancel", `Quick, test_cancel;
 ]
 
 let () =

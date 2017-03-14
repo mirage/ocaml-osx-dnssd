@@ -309,6 +309,7 @@ module LowLevel = struct
   type query = {
     query: dNSServiceRef;
     token: int;
+    mutable cancelled: bool;
   }
 
   let query name ty =
@@ -319,17 +320,26 @@ module LowLevel = struct
       if ty'' < 0 then failwith "Unrecognised query type";
       let token = next_token () in
       let query = query_record name ty'' token in
-      { query; token }
+      let cancelled = false in
+      { query; token; cancelled }
 
-  let socket { query; _ } =
+  exception Cancelled
+
+  let socket { query; cancelled; _ } =
+    if cancelled then raise Cancelled;
     query_fd query
 
-  let response { query; token } =
+  let response { query; token; cancelled } =
+    if cancelled then raise Cancelled;
     query_process query;
     let result = Hashtbl.find in_progress_calls token in
     Hashtbl.remove in_progress_calls token;
     query_deallocate query;
     result
+
+  let cancel q =
+    q.cancelled <- true;
+    query_deallocate q.query
 
 end
 
