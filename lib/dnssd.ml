@@ -289,7 +289,9 @@ let common_callback token result = match result with
       if Hashtbl.mem in_progress_calls token then begin
         match Hashtbl.find in_progress_calls token with
         | Error _ -> () (* keep the error *)
-        | Ok existing -> Hashtbl.replace in_progress_calls token (Ok (rr :: existing))
+        | Ok existing ->
+          (* [1] list is accumulated backwards, see below [2] *)
+          Hashtbl.replace in_progress_calls token (Ok (rr :: existing))
       end else Hashtbl.replace in_progress_calls token (Ok [ rr ])
     end
 
@@ -302,7 +304,10 @@ let query name ty =
     let token = next_token () in
     let q = query_record name ty'' token in
     query_process q;
-    let result = Hashtbl.find in_progress_calls token in
+    (* [2] list is accumulated backwards, see above [1] *)
+    let result = match Hashtbl.find in_progress_calls token with
+      | Error e -> Error e
+      | Ok xs -> Ok (List.rev xs) in
     Hashtbl.remove in_progress_calls token;
     query_deallocate q;
     result
@@ -334,7 +339,10 @@ module LowLevel = struct
   let response { query; token; cancelled } =
     if cancelled then raise Cancelled;
     query_process query;
-    let result = Hashtbl.find in_progress_calls token in
+    (* [2] list is accumulated backwards, see above [1] *)
+    let result = match Hashtbl.find in_progress_calls token with
+      | Error e -> Error e
+      | Ok xs -> Ok (List.rev xs) in
     Hashtbl.remove in_progress_calls token;
     query_deallocate query;
     result
