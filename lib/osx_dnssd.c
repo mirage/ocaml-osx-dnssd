@@ -3,6 +3,7 @@
 #include <caml/custom.h>
 #include <caml/callback.h>
 #include <caml/alloc.h>
+#include <caml/fail.h>
 
 #include <string.h>
 
