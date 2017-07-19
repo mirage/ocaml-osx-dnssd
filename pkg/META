@@ -1,8 +1,0 @@
-description = "macOS DNS-SD"
-version = "%%VERSION_NUM%%"
-requires="dns lwt"
-archive(byte) = "osx-dnssd.cma"
-plugin(byte) = "osx-dnssd.cma"
-archive(native) = "osx-dnssd.cmxa"
-plugin(native) = "osx-dnssd.cmxs"
-exists_if = "osx-dnssd.cma"
