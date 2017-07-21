@@ -14,6 +14,10 @@ build: [
   ["jbuilder" "build" "-j" jobs]
 ]
 
+build-test: [
+  [ "jbuilder" "runtest" ]
+]
+
 depends: [
   "dns"
   "lwt"
