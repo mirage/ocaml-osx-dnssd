@@ -130,10 +130,13 @@ let () =
       (Printexc.get_backtrace ())
     )
   );
-  Alcotest.run "dnssd" [
+  let darwin_only = [
     "types", test_types;
     "errors", test_errors;
     "lowlevel", test_lowlevel;
     "performance", test_perf;
+  ] in
+  let suite = [
     "misc", test_misc;
-  ]
+  ] @ (if Dnssd.is_supported_on_this_platform () then darwin_only else []) in
+  Alcotest.run "dnssd" suite

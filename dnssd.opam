@@ -1,6 +1,6 @@
 opam-version: "1.2"
 maintainer: "dave@recoil.org"
-authors: ["David Scott"]
+authors: ["David Scott" "Thomas Gazagnaire"]
 license: "ISC"
 homepage: "https://github.com/djs55/ocaml-osx-dnssd"
 dev-repo: "https://github.com/djs55/ocaml-osx-dnssd.git"
@@ -12,6 +12,10 @@ tags: [
 build: [
   ["jbuilder" "subst"] {pinned}
   ["jbuilder" "build" "-j" jobs]
+]
+
+build-test: [
+  [ "jbuilder" "runtest" ]
 ]
 
 depends: [
