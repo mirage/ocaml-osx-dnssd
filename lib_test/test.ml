@@ -34,13 +34,17 @@ let test_mx () =
 
 let test_nomx () =
   match Dnssd.(query "dave.recoil.org" Dns.Packet.Q_MX) with
+  | Error Dnssd.NoSuchRecord -> ()
   | Error err -> failwith (Printf.sprintf "Error looking up records for dave.recoil.org: %s" (Dnssd.string_of_error err))
   | Ok results ->
     List.iter
       (fun rr ->
-        Log.info (fun f -> f "dave.recoil.org MX: %s" (Dns.Packet.rr_to_string rr))
+        match rr.Dns.Packet.rdata with
+        | MX _ ->
+          failwith (Printf.sprintf "Unexpectedly found an MX record for dave.recoil.org: %s" (Dns.Packet.rr_to_string rr))
+        | _ ->
+          Log.info (fun f -> f "dave.recoil.org MX query returned other record: %s" (Dns.Packet.rr_to_string rr))
       ) results
-    (* FIXME: check the type of the records *)
 
 let test_types = [
   "MX", `Quick, test_mx;

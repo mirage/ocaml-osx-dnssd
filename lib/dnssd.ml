@@ -22,6 +22,8 @@ let src =
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
+[@@@warning "-37"]
+
 type kDNSServiceType =
   | A
   | NS
@@ -87,6 +89,8 @@ type kDNSServiceType =
   | MAILB
   | MAILA
   | ANY
+
+[@@@warning "+37"]
 
 external int_of_DNSServiceType: kDNSServiceType -> int = "stub_int_of_DNSServiceType"
 
