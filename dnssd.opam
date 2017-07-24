@@ -5,7 +5,7 @@ license: "ISC"
 homepage: "https://github.com/djs55/ocaml-osx-dnssd"
 dev-repo: "https://github.com/djs55/ocaml-osx-dnssd.git"
 bug-reports: "https://github.com/djs55/ocaml-osx-dnssd/issues"
-docs: "https://mirage.github.io/ocaml-osx-dnssd/"
+doc: "https://mirage.github.io/ocaml-osx-dnssd/"
 tags: [
   "org:mirage"
 ]
