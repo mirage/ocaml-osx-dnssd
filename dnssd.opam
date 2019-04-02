@@ -11,12 +11,12 @@ tags: [
 ]
 
 build: [
-  ["jbuilder" "subst"] {pinned}
-  ["jbuilder" "build" "-j" jobs]
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
 ]
 
 build-test: [
-  [ "jbuilder" "runtest" ]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 
 depends: [
@@ -25,7 +25,7 @@ depends: [
   "logs"
   "fmt"
   "cstruct" {>= "2.3.0"}
-  "jbuilder" {build & >= "1.0+beta10"}
+  "dune" {build}
   "alcotest" {test}
 ]
 
