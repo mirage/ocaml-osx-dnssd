@@ -22,6 +22,14 @@ let src =
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
+let test_srv () =
+  match Dnssd.(query "hugedns.test.dziemba.net" Dns.Packet.Q_SRV) with
+  | Error err -> failwith (Printf.sprintf "Error looking up SRV records for hugedns.test.dziemba.net: %s" (Dnssd.string_of_error err))
+  | Ok [] -> failwith "No SRV records found for hugedns.test.dziemba.net";
+  | Ok results ->
+    if List.length results <> 420
+    then failwith (Printf.sprintf "dig SRV hugedns.test.dziemba.net should return 420 records, but I got %d" (List.length results))
+
 let test_mx () =
   match Dnssd.(query "google.com" Dns.Packet.Q_MX) with
   | Error err -> failwith (Printf.sprintf "Error looking up MX records for google.com: %s" (Dnssd.string_of_error err))
@@ -48,6 +56,7 @@ let test_nomx () =
 
 let test_types = [
   "MX", `Quick, test_mx;
+  "SRV", `Quick, test_srv;
   "No MX", `Quick, test_nomx;
 ]
 
