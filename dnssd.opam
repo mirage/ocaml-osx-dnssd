@@ -1,9 +1,9 @@
-opam-version: "1.2"
+opam-version: "2.0"
 maintainer: "dave@recoil.org"
 authors: ["David Scott" "Thomas Gazagnaire"]
 license: "ISC"
 homepage: "https://github.com/mirage/ocaml-osx-dnssd"
-dev-repo: "https://github.com/mirage/ocaml-osx-dnssd.git"
+dev-repo: "git+https://github.com/mirage/ocaml-osx-dnssd.git"
 bug-reports: "https://github.com/mirage/ocaml-osx-dnssd/issues"
 doc: "https://mirage.github.io/ocaml-osx-dnssd/"
 tags: [
@@ -13,20 +13,24 @@ tags: [
 build: [
   ["dune" "subst"] {pinned}
   ["dune" "build" "-p" name "-j" jobs]
-]
-
-build-test: [
   ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 
 depends: [
+  "ocaml" {>= "4.03.0"}
   "dns"
   "lwt"
   "logs"
   "fmt"
   "cstruct" {>= "2.3.0"}
   "dune" {build}
-  "alcotest" {test}
+  "alcotest" {with-test}
 ]
 
-available: [ocaml-version >= "4.03.0"]
+synopsis: "DNS resolution for macOS"
+description: """
+Bindings to the
+[DNSServiceRef](https://developer.apple.com/documentation/dnssd/dnsserviceref?language=objc)
+APIs on macOS which use the system's DNS resolver. This allows you to perform
+DNS queries using exactly the same logic as macOS, including respecting VPN
+policy."""
