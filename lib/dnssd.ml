@@ -242,10 +242,13 @@ type cb_result = {
   cb_rrclass: int;
   cb_rrdata: Bytes.t;
   cb_ttl: int;
+  cb_more: bool; (* true if query_process should be called again for more results *)
 }
 
 (* Accumulate the results here *)
 let in_progress_calls = Hashtbl.create 7
+(* Whether we need to call query_process again to gather more results *)
+let more_results_expected : (int, bool) Hashtbl.t = Hashtbl.create 7
 
 type token = int
 
@@ -261,7 +264,8 @@ external is_supported_on_this_platform: unit -> bool = "stub_is_supported_on_thi
 
 let common_callback token result = match result with
   | Error err ->
-    Hashtbl.replace in_progress_calls token (Error err)
+    Hashtbl.replace in_progress_calls token (Error err);
+    Hashtbl.remove more_results_expected token
   | Ok this ->
     let buf = Cstruct.create (Bytes.length this.cb_rrdata) in
     Cstruct.blit_from_bytes this.cb_rrdata 0 buf 0 (Bytes.length this.cb_rrdata);
@@ -290,6 +294,9 @@ let common_callback token result = match result with
           (Buffer.contents buffer) this.cb_ttl
       )
     | Some rr ->
+      if this.cb_more
+      then Hashtbl.replace more_results_expected token true
+      else Hashtbl.remove more_results_expected token;
       if Hashtbl.mem in_progress_calls token then begin
         match Hashtbl.find in_progress_calls token with
         | Error _ -> () (* keep the error *)
@@ -307,12 +314,16 @@ let query_one name ty =
     if ty'' < 0 then failwith "Unrecognised query type";
     let token = next_token () in
     let q = query_record name ty'' token in
-    query_process q;
+    Hashtbl.replace more_results_expected token true;
+    while Hashtbl.mem more_results_expected token do
+      query_process q
+    done;
     (* [2] list is accumulated backwards, see above [1] *)
     let result = match Hashtbl.find in_progress_calls token with
       | Error e -> Error e
       | Ok xs -> Ok (List.rev xs) in
     Hashtbl.remove in_progress_calls token;
+    Hashtbl.remove more_results_expected token;
     query_deallocate q;
     result
 
@@ -377,6 +388,7 @@ module LowLevel = struct
       | Error e -> Error e
       | Ok xs -> Ok (List.rev xs) in
     Hashtbl.remove in_progress_calls token;
+    Hashtbl.remove more_results_expected token;
     query_deallocate query;
     result
 
