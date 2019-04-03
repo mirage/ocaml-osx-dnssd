@@ -1,5 +1,6 @@
 language: c
 sudo: required
+dist: trusty
 os:
   - linux
   - osx
@@ -7,5 +8,5 @@ install: wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/ma
 script: bash ./.travis-opam.sh
 env:
  global:
-   - PACKAGE="dnssd" OCAML_VERSION=4.03
+   - PACKAGE="dnssd" OCAML_VERSION=4.07
 
