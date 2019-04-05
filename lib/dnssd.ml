@@ -372,6 +372,7 @@ module LowLevel = struct
       let token = next_token () in
       let query = query_record name ty'' token in
       let cancelled = false in
+      Hashtbl.replace more_results_expected token true;
       { query; token; cancelled }
 
   exception Cancelled
@@ -383,17 +384,25 @@ module LowLevel = struct
   let response { query; token; cancelled } =
     if cancelled then raise Cancelled;
     query_process query;
-    (* [2] list is accumulated backwards, see above [1] *)
-    let result = match Hashtbl.find in_progress_calls token with
-      | Error e -> Error e
-      | Ok xs -> Ok (List.rev xs) in
-    Hashtbl.remove in_progress_calls token;
-    Hashtbl.remove more_results_expected token;
-    query_deallocate query;
-    result
+    match Hashtbl.find in_progress_calls token with
+    | Error e ->
+      Hashtbl.remove in_progress_calls token;
+      Hashtbl.remove more_results_expected token;
+      query_deallocate query;
+      Error e
+    | Ok rrs ->
+      Hashtbl.remove in_progress_calls token;
+      (* [2] list is accumulated backwards, see above [1] *)
+      if Hashtbl.mem more_results_expected token
+      then Ok (rrs, true)
+      else begin
+        query_deallocate query;
+        Ok (rrs, false)
+      end
 
   let cancel q =
     q.cancelled <- true;
+    Hashtbl.remove more_results_expected q.token;
     query_deallocate q.query
 
 end

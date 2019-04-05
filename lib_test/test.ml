@@ -75,19 +75,38 @@ let test_errors = [
   "NXDomain", `Quick, test_notfound;
 ]
 
+let receive_all q =
+  let open Dnssd.LowLevel in
+  let fd = socket q in
+  let rec loop acc =
+    let r, _, _ = Unix.select [ fd ] [] [] 5. in
+    if r = [] then failwith "No events on socket according to select";
+    match response q with
+    | Error err -> failwith (Printf.sprintf "Error looking up records for hugedns.test.dziemba.net: %s" (Dnssd.string_of_error err))
+    | Ok (results, true) -> loop (acc @ results)
+    | Ok (results, false) -> acc @ results in
+  loop []
+
 let test_select () =
   let open Dnssd.LowLevel in
   let q = query "dave.recoil.org" Dns.Packet.Q_A in
-  let fd = socket q in
-  let r, _, _ = Unix.select [ fd ] [] [] 5. in
-  if r = [] then failwith "No events on socket according to select";
-  match response q with
-  | Error err -> failwith (Printf.sprintf "Error looking up records for dave.recoil.org: %s" (Dnssd.string_of_error err))
-  | Ok results ->
-    List.iter
-      (fun rr ->
-        Log.info (fun f -> f "dave.recoil.org A: %s" (Dns.Packet.rr_to_string rr))
-      ) results
+  let results = receive_all q in
+  List.iter
+    (fun rr ->
+      Log.info (fun f -> f "dave.recoil.org A: %s" (Dns.Packet.rr_to_string rr))
+    ) results
+
+let test_select_large () =
+  let open Dnssd.LowLevel in
+  let q = query "hugedns.test.dziemba.net" Dns.Packet.Q_SRV in
+  let results = receive_all q in
+  List.iter
+    (fun rr ->
+      Log.info (fun f -> f "hugedns.test.dziemba.net SRV: %s" (Dns.Packet.rr_to_string rr))
+    ) results;
+  Log.info (fun f -> f "list was length %d" (List.length results));
+  if List.length results <> 420
+  then failwith (Printf.sprintf "dig SRV hugedns.test.dziemba.net should return 420 records, but I got %d" (List.length results))
 
 let test_cancel () =
   let open Dnssd.LowLevel in
@@ -103,6 +122,7 @@ let test_cancel () =
 let test_lowlevel = [
   "select", `Quick, test_select;
   "cancel", `Quick, test_cancel;
+  "large", `Quick, test_select_large;
 ]
 
 let test_1000 () =

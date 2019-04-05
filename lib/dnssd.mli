@@ -86,10 +86,12 @@ module LowLevel: sig
       called without blocking (very much).
       This raises [Cancelled] if the query has been cancelled. *)
 
-  val response: query -> (Dns.Packet.rr list, error) result
+  val response: query -> ((Dns.Packet.rr list * bool), error) result
   (** [response query] reads the responses which have arrived for [query].
       This function will block unless the caller has waited for events on the
       Unix domain socket.
+      If the response is [Ok (rrs, true)] then more results are expected so
+      the caller should wait on the Unix domain socket and call `response` again.
       This raises [Cancelled] if the query has been cancelled. *)
 
   val cancel: query -> unit
