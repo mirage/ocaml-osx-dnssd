@@ -23,7 +23,7 @@ depends: [
   "logs"
   "fmt"
   "cstruct" {>= "2.3.0"}
-  "dune" {build}
+  "dune"
   "alcotest" {with-test}
 ]
 
